@@ -1,0 +1,76 @@
+# Whole stack with one command:   docker compose up --build
+#   frontend  http://localhost:5173  (nginx serving the React build, proxies /api)
+#   backend   http://localhost:5000  (Node/Express API)
+#   mongodb   localhost:27017        (official mongo image, data in a named volume)
+#
+# JWT_SECRET is read from the .env file next to this file (never committed).
+
+services:
+  mongodb:
+    image: mongo:7
+    container_name: taskmanager-mongodb
+    restart: unless-stopped
+    ports:
+      - "27017:27017"
+    volumes:
+      - mongo-data:/data/db # tasks survive "docker compose down" / restarts
+    networks:
+      - app-network
+    healthcheck:
+      test: ["CMD", "mongosh", "--quiet", "--eval", "db.adminCommand('ping').ok"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+      start_period: 10s
+
+  backend:
+    build:
+      context: .
+      dockerfile: Dockerfile.backend
+    container_name: taskmanager-backend
+    restart: unless-stopped
+    environment:
+      PORT: 5000
+      # Service name "mongodb", not localhost: inside a container, localhost
+      # is the backend container itself.
+      MONGO_URI: mongodb://mongodb:27017/taskmanager
+      JWT_SECRET: ${JWT_SECRET:?Set JWT_SECRET in .env}
+      JWT_EXPIRES_IN: ${JWT_EXPIRES_IN:-1h}
+      CACHE_ENABLED: ${CACHE_ENABLED:-true}
+      CACHE_TTL: ${CACHE_TTL:-60}
+      NOTIFY_MODE: ${NOTIFY_MODE:-async}
+      NOTIFY_DELAY_MS: ${NOTIFY_DELAY_MS:-2000}
+    ports:
+      - "5000:5000"
+    depends_on:
+      mongodb:
+        condition: service_healthy # wait until MongoDB answers a ping
+    networks:
+      - app-network
+    healthcheck:
+      test: ["CMD", "node", "-e", "fetch('http://localhost:5000/api').then(r => process.exit(r.ok ? 0 : 1)).catch(() => process.exit(1))"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+
+  frontend:
+    build:
+      context: .
+      dockerfile: Dockerfile.frontend
+    container_name: taskmanager-frontend
+    restart: unless-stopped
+    ports:
+      - "5173:80" # host 5173 -> nginx 80 inside the container
+    depends_on:
+      backend:
+        condition: service_healthy
+    networks:
+      - app-network
+
+networks:
+  app-network:
+    driver: bridge
+
+volumes:
+  mongo-data:

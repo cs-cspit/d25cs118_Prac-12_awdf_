@@ -1,0 +1,25 @@
+# Installed inside the image with npm ci - never copied from the host
+node_modules
+npm-debug.log*
+*.log
+
+# Secrets stay out of the build context (Compose passes them as env vars)
+.env
+.env.*
+!.env.example
+
+# Build output is produced inside the frontend image
+dist
+dist-ssr
+
+# Not needed in any image
+.git
+.gitignore
+.github
+.vscode
+.idea
+docs
+README.md
+postman_collection.json
+Dockerfile.*
+docker-compose.yml

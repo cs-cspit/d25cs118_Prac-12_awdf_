@@ -1,0 +1,25 @@
+# Backend: Node/Express API (server/ folder)
+# node:22 instead of node:18 - the project's tooling (Vite 8) needs Node >= 20.19,
+# and Node 18 is end-of-life.
+FROM node:22-alpine
+
+WORKDIR /app
+
+# Install only production dependencies inside the image (express, mongoose, ...).
+# package*.json is copied first so this layer stays cached until dependencies change.
+COPY package*.json ./
+RUN npm ci --omit=dev && npm cache clean --force
+
+# Only the backend code - the React source is not needed here
+COPY server ./server
+
+ENV NODE_ENV=production \
+    PORT=5000
+
+# Documents the port the app listens on; publishing happens in docker-compose.yml
+EXPOSE 5000
+
+# Run as the unprivileged "node" user that the official image provides
+USER node
+
+CMD ["node", "server/app.js"]
