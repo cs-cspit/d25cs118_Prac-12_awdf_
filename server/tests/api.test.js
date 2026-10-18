@@ -62,7 +62,7 @@ describe('Task routes (JWT protected)', () => {
       .set('Authorization', `Bearer ${token}`)
       .send({ title: 'Write CI pipeline', priority: 'high' });
 
-    expect(res.statusCode).toBe(200) // deliberately wrong: a created resource returns 201;
+    expect(res.statusCode).toBe(201);
     expect(res.body.task.title).toBe('Write CI pipeline');
     expect(res.body.task.completed).toBe(false);
   });
