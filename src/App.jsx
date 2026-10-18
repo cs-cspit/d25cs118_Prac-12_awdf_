@@ -51,7 +51,7 @@ function App() {
           <Navbar />
           <AppRoutes />
           <footer className="app-footer">
-            <p>Practical 11 — Containerization with Docker &amp; Docker Compose &bull; AWDF &bull; D25CS118</p>
+            <p>Practical 12 — CI/CD Pipeline with GitHub Actions &bull; AWDF &bull; D25CS118</p>
           </footer>
         </div>
       </AuthProvider>

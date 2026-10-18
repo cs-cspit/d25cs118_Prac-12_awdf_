@@ -7,20 +7,20 @@ function Home() {
   return (
     <section className="section section-hero">
       <div className="hero-copy">
-        <p className="eyebrow">Welcome to Practical 11</p>
+        <p className="eyebrow">Welcome to Practical 12</p>
         <h1>
-          Containerized with <span className="gradient-text">Docker</span>
+          CI/CD with <span className="gradient-text">GitHub Actions</span>
         </h1>
         <p className="section-intro">
-          The frontend, backend and MongoDB each run in their own container, and one
-          <code> docker compose up --build</code> starts all three.
+          Every push to <code>main</code> starts a pipeline that installs dependencies, lints the
+          code, runs the API tests and builds the frontend.
         </p>
         <p className="hero-note">
-          This page is served by <strong>nginx</strong> from a multi-stage image. Requests to
-          <code> /api</code> are proxied to the <code>backend</code> container, which connects to
-          <code> mongodb://mongodb:27017</code>, using the service name, not localhost. All three
-          containers share the <code>app-network</code> bridge network, and tasks are kept in the
-          <code> mongo-data</code> named volume.
+          <code>.github/workflows/ci.yml</code> has two jobs. <strong>Lint</strong> runs ESLint, and
+          only if it passes does <strong>Build and test</strong> start. That job runs
+          Jest + supertest against a throw-away <code>mongo:7</code> service container and then runs
+          <code> npm run build</code>. A failing test turns the commit red on GitHub; fixing it turns
+          it green again.
         </p>
         <p className="hero-note">
           {user ? (
@@ -32,13 +32,13 @@ function Home() {
         <div className="feature-list">
           <p>✨ Key Features:</p>
           <ul>
-            <li>Dockerfile.backend — node:22-alpine, npm ci --omit=dev, non-root user</li>
-            <li>Dockerfile.frontend — multi-stage: Vite build → nginx:alpine</li>
-            <li>docker-compose.yml — frontend :5173, backend :5000, mongodb :27017</li>
-            <li>Healthchecks + depends_on: MongoDB → backend → frontend</li>
-            <li>Named volume mongo-data so tasks survive restarts</li>
-            <li>.dockerignore keeps node_modules and .env out of the images</li>
-            <li>Still includes events (P10), caching (P9), lazy loading (P8) and JWT auth (P7)</li>
+            <li>Trigger: push and pull_request on the main branch</li>
+            <li>Job 1 — ESLint; Job 2 — npm ci → npm test → npm run build</li>
+            <li>7 API tests: /api, 404, 401 without token, GET / POST tasks, validation</li>
+            <li>MongoDB service container (mongo:7) inside the pipeline</li>
+            <li>server/app.js exports the Express app so supertest needs no open port</li>
+            <li>Failed run (deliberately broken test) and fixed run documented</li>
+            <li>Still includes Docker (P11), events (P10), caching (P9) and JWT auth (P7)</li>
           </ul>
         </div>
       </div>

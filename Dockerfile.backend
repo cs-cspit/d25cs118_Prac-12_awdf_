@@ -22,4 +22,4 @@ EXPOSE 5000
 # Run as the unprivileged "node" user that the official image provides
 USER node
 
-CMD ["node", "server/app.js"]
+CMD ["node", "server/server.js"]

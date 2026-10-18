@@ -1,0 +1,70 @@
+name: CI Pipeline
+
+# Runs on every push to main, and on pull requests that target main
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  # Job 1: static checks - the test job only starts if this passes
+  lint:
+    name: Lint (ESLint)
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22 # Vite 8 / ESLint 10 need Node >= 20.19
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci # clean install from package-lock.json
+
+      - name: Run ESLint
+        run: npm run lint
+
+  # Job 2: API tests against a real MongoDB, then a production build
+  build-and-test:
+    name: Build and test
+    needs: lint
+    runs-on: ubuntu-latest
+
+    # Throw-away MongoDB container for this job only (same image as docker-compose.yml)
+    services:
+      mongodb:
+        image: mongo:7
+        ports:
+          - 27017:27017
+        options: >-
+          --health-cmd "mongosh --quiet --eval 'db.runCommand({ ping: 1 })'"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+
+    env:
+      MONGO_URI_TEST: mongodb://localhost:27017/taskmanager_test
+      JWT_SECRET: ci-only-test-secret # test-only value, not a real secret
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run tests (Jest + supertest)
+        run: npm test
+
+      - name: Build frontend
+        run: npm run build
